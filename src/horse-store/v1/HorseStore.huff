@@ -1,9 +1,16 @@
+// Interfaces
+#define function updateHorseNumber(uint256) nonpayable returns()
+#define function readNumberOfHorses() view returns(uint256)
+
+// Storage slots
+#define constant HORSE_NUMBER_STORAGE_SLOT = FREE_STORAGE_POINTER() // Slot_0
+
 // Function dispatching
 #define macro MAIN() = takes(0) returns(0) {
-    0x00 calldatacopy 0xe0 shr // [function_selector]
+    0x00 calldataload 0xe0 shr // [function_selector]
 
-    dup1 0xcdfead2e updateHorseNumberJump jumpi
-    dup1 0xe026c017 readNumberOfHorsesJump jumpi
+    dup1 __FUNC_SIG(updateHorseNumber) eq updateHorseNumberJump jumpi
+    __FUNC_SIG(readNumberOfHorses) eq readNumberOfHorsesJump jumpi
 
     0x00 0x00 revert
 
@@ -11,9 +18,16 @@
     readNumberOfHorsesJump: READ_NUMBER_OF_HORSES()
 }
 
-// Todo: explain the whole code in Notion
+#define macro UPDATE_HORSE_NUMBER() = takes(0) returns(0) {
+    0x04 calldataload // [new_horse_number]
+    [HORSE_NUMBER_STORAGE_SLOT] // [slot_0, new_horse_number]
+    sstore
+    stop
+}
 
-#define macro UPDATE_HORSE_NUMBER() = takes(0) returns(0) {}
-
-#define macro READ_NUMBER_OF_HORSES() = takes(0) returns(0) {}
+#define macro READ_NUMBER_OF_HORSES() = takes(0) returns(0) {
+    [HORSE_NUMBER_STORAGE_SLOT] sload // [horse_number]
+    0x00 mstore
+    0x20 0x00 return
+}
 
