@@ -1,0 +1,19 @@
+// Function dispatching
+#define macro MAIN() = takes(0) returns(0) {
+    0x00 calldatacopy 0xe0 shr // [function_selector]
+
+    dup1 0xcdfead2e updateHorseNumberJump jumpi
+    dup1 0xe026c017 readNumberOfHorsesJump jumpi
+
+    0x00 0x00 revert
+
+    updateHorseNumberJump: UPDATE_HORSE_NUMBER()
+    readNumberOfHorsesJump: READ_NUMBER_OF_HORSES()
+}
+
+// Todo: explain the whole code in Notion
+
+#define macro UPDATE_HORSE_NUMBER() = takes(0) returns(0) {}
+
+#define macro READ_NUMBER_OF_HORSES() = takes(0) returns(0) {}
+
