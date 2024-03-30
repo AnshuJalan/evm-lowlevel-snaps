@@ -3,9 +3,10 @@ pragma solidity 0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {HorseStore} from "horse-store/v1/HorseStore.sol";
+import {IHorseStore} from "horse-store/v1/interfaces/IHorseStore.sol";
 
 abstract contract BaseTest is Test {
-    HorseStore internal horseStore;
+    IHorseStore internal horseStore;
 
     function setUp() public virtual {
         horseStore = new HorseStore();
