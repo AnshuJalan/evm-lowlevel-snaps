@@ -1,0 +1,213 @@
+// HorseStore interface
+#define function mintHorse() nonpayable returns()
+#define function feedHorse(uint256) nonpayable returns()
+#define function isHappyHorse(uint256) view returns(bool)
+#define function horseIdToFedTimestamp(uint256) view returns(uint256)
+#define function HORSE_HAPPY_IF_FED_WITHIN() view returns(uint256)
+
+// ERC721 interface
+#define function balanceOf(address) view returns(uint256)
+#define function ownerOf(uint256) view returns(address)
+#define function name() view returns(string)
+#define function symbol() view returns(string)
+#define function tokenURI(uint256) view returns(string)
+#define function approve(address, uint256) nonpayable returns()
+#define function getApproved(uint256) view returns(address)
+#define function setApprovalForAll(address, bool) nonpayable returns()
+#define function isApprovedForAll(address, address) view returns(bool)
+#define function transferFrom(address, address, uint256) nonpayable returns()
+#define function safeTransferFrom(address, address, uint256) nonpayable returns()
+#define function safeTransferFrom(address, address, uint256, bytes) nonpayable returns()
+
+// ERC721Enumerable interface
+#define function supportsInterface(bytes4) view returns(bool)
+#define function tokenOfOwnerByIndex(address, uint256) view returns(uint256)
+#define function tokenByIndex(uint256) view returns(uint256)
+#define function totalSupply() view returns(uint256)
+
+
+// Primitives
+#define constant TOTAL_SUPPLY = FREE_STORAGE_POINTER()
+
+// Mapping slots
+#define constant HORSE_ID_TO_FED_TIMESTAMP = FREE_STORAGE_POINTER() // unsigned integer -> unsigned integer
+#define constant OWNERS = FREE_STORAGE_POINTER() // unsigned integer -> address
+#define constant BALANCES = FREE_STORAGE_POINTER() // address -> unsigned integer
+
+// Dynamic array slots 
+// The slots store the array length
+#define constant ALL_TOKENS = FREE_STORAGE_POINTER() // [unsigned integer]
+
+// Literals
+#define constant HORSE_HAPPY_IF_FED_WITHIN = 0x15180 // 1 day
+
+
+// Function dispatch
+#define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xe0 shr // [function_selector]
+
+    dup1 __FUNC_SIG(mintHorse) eq mintHorseJump jumpi
+    dup1 __FUNC_SIG(feedHorse) eq feedHorseJump jumpi
+    dup1 __FUNC_SIG(isHappyHorse) eq isHappyHorseJump jumpi
+    dup1 __FUNC_SIG(horseIdToFedTimestamp) eq horseIdToFedTimestampJump jumpi
+    dup1 __FUNC_SIG(HORSE_HAPPY_IF_FED_WITHIN) eq horseHappyIfFedWithinJump jumpi
+
+    dup1 __FUNC_SIG(balanceOf) eq balanceOfJump jumpi
+    dup1 __FUNC_SIG(ownerOf) eq ownerOfJump jumpi
+    dup1 __FUNC_SIG(name) eq nameJump jumpi
+    dup1 __FUNC_SIG(symbol) eq symbolJump jumpi
+    dup1 __FUNC_SIG(tokenURI) eq tokenURIJump jumpi
+    dup1 __FUNC_SIG(approve) eq approveJump jumpi
+    dup1 __FUNC_SIG(getApproved) eq getApprovedJump jumpi
+    dup1 __FUNC_SIG(setApprovalForAll) eq setApprovalForAllJump jumpi
+    dup1 __FUNC_SIG(isApprovedForAll) eq isApprovedForAllJump jumpi
+    dup1 __FUNC_SIG(transferFrom) eq transferFromJump jumpi
+    dup1 __FUNC_SIG(safeTransferFrom) eq safeTransferFromJump jumpi
+    dup1 __FUNC_SIG(safeTransferFrom) eq safeTransferFromJump jumpi
+
+    dup1 __FUNC_SIG(supportsInterface) eq supportsInterfaceJump jumpi
+    dup1 __FUNC_SIG(tokenOfOwnerByIndex) eq tokenOfOwnerByIndexJump jumpi
+    dup1 __FUNC_SIG(tokenByIndex) eq tokenByIndexJump jumpi
+    __FUNC_SIG(totalSupply) eq totalSupplyJump jumpi
+
+    // Revert if none of the interfaces match
+    0x00 0x00 revert
+
+    // Jump destinations
+    mintHorseJump: MINT_HORSE()
+    feedHorseJump: FEED_HORSE()
+    isHappyHorseJump: IS_HAPPY_HORSE()
+    horseIdToFedTimestampJump: HORSE_ID_TO_FED_TIMESTAMP()
+    horseHappyIfFedWithinJump: HORSE_HAPPY_IF_FED_WITHIN()
+
+    balanceOfJump: BALANCE_OF()
+    ownerOfJump: OWNER_OF()
+    nameJump: NAME()
+    symbolJump: SYMBOL()
+    tokenURIJump: TOKEN_URI()
+    approveJump: APPROVE()
+    getApprovedJump: GET_APPROVED()
+    setApprovalForAllJump: SET_APPROVAL_FOR_ALL()
+    isApprovedForAllJump: IS_APPROVED_FOR_ALL()
+    transferFromJump: TRANSFER_FROM()
+    safeTransferFromJump: SAFE_TRANSFER_FROM()
+    safeTransferFromJump: SAFE_TRANSFER_FROM()
+
+    supportsInterfaceJump: SUPPORTS_INTERFACE()
+    tokenOfOwnerByIndexJump: TOKEN_OF_OWNER_BY_INDEX()
+    tokenByIndexJump: TOKEN_BY_INDEX()
+    totalSupplyJump: TOTAL_SUPPLY()
+}
+
+//======================
+// HorseStore functions
+//======================
+
+#define macro MINT_HORSE() = takes(0) returns(0) {
+    caller // [caller] 
+    
+    // Compute storage slot for total_supply within OWNERS and store the caller
+    [OWNERS] [TOTAL_SUPPLY] sload // [total_supply, map_slot, caller]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) // [key_slot, caller]
+    sstore
+
+    // Compute storage slot for caller within BALANCES and increment the balance by 1
+    [BALANCES] caller // [caller, map_slot]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) dup1 // [key_slot, key_slot]
+    sload // [key_value, key_slot]
+    push1 0x01 add // [key_value + 1, key_slot]
+    swap1 sstore 
+
+    // Increment total_supply by 1
+    [TOTAL_SUPPLY] sload // [total_supply]
+    push1 0x01 add // [total_supply + 1]
+    [TOTAL_SUPPLY] sstore
+
+    stop
+}
+
+#define macro FEED_HORSE() = takes(0) returns(0) {
+    timestamp // [timestamp]
+
+    // Compute storage slot for horse_id within HORSE_ID_TO_FED_TIMESTAMP and store the timestamp
+    [HORSE_ID_TO_FED_TIMESTAMP] // [map_slot, timestamp]
+    0x04 calldataload // [horse_id, map_slot, timestamp]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) // [key_slot, timestamp]
+    sstore
+
+    stop
+}
+
+#define macro IS_HAPPY_HORSE() = takes(0) returns(0) {
+    // Compute storage slot for horse_id within HORSE_ID_TO_FED_TIMESTAMP and load the current value
+    [HORSE_ID_TO_FED_TIMESTAMP] // [map_slot]
+    0x04 calldataload // [horse_id, map_slot]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) // [key_slot]
+    sload // [last_fed]
+    
+    // Check if more than HORSE_HAPPY_IF_FED_WITHIN seconds have passed since last fed
+    timestamp sub // [timestamp - last_fed]
+    [HORSE_HAPPY_IF_FED_WITHIN] gt // [true/false]
+    0x00 mstore // [], mem: 0x00 -> true/false
+
+    // Return the boolean value
+    0x20 0x00 return
+}
+
+#define macro HORSE_ID_TO_FED_TIMESTAMP() = takes(0) returns(0) {
+    // Compute storage slot for horse_id within HORSE_ID_TO_FED_TIMESTAMP, load the current value and store it in memory
+    [HORSE_ID_TO_FED_TIMESTAMP] // [map_slot]
+    0x04 calldataload // [horse_id, map_slot]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) // [key_slot]
+    sload // [last_fed]
+    0x00 mstore // [], mem: 0x00 -> last_fed
+
+    // Return the last_fed
+    0x20 0x00 return
+}
+
+#define macro HORSE_HAPPY_IF_FED_WITHIN() = takes(0) returns(0) {
+    // Put the value of HORSE_HAPPY_IF_FED_WITHIN in memory
+    [HORSE_HAPPY_IF_FED_WITHIN] 0x00 mstore // mem: 0x00 -> HORSE_HAPPY_IF_FED_WITHIN
+
+    // Return HORSE_HAPPY_IF_FED_WITHIN
+    0x20 0x00 return
+}
+
+//===========
+// Utilities
+//===========
+
+// Computes the storage slot for a map's key using the key and map's slot
+// Expected stack before call: [key, map_slot]
+#define macro COMPUTE_MAPPING_KEY_SLOT(mem_ptr) = takes(2) returns(1) {
+    <mem_ptr> mstore // [map_slot], mem: ptr -> key  
+    <mem_ptr> 0x20 add mstore // [], mem: ptr -> key | (ptr + 0x20) -> map_slot 
+    0x40 <mem_ptr> sha3 // [key_slot]
+}
+
+// Computes the storage slot for an array's next element
+// Expected stack before call: [array_slot]
+#define macro COMPUTE_ARRAY_ELEMENT_SLOT(mem_ptr) = takes(1) returns(1) {
+    dup1 <mem_ptr> mstore // [array_slot], mem: ptr -> array_slot
+    mload // [array_length], mem: ptr -> array_slot
+    0x20 <mem_ptr> sha3 // [slot_hash, array_length] 
+    add // [element_slot]
+}
+
+// Scratch
+#define macro BALANCE_OF() = takes(0) returns(0) {}
+#define macro OWNER_OF() = takes(0) returns(0) {}
+#define macro NAME() = takes(0) returns(0) {}
+#define macro SYMBOL() = takes(0) returns(0) {}
+#define macro TOKEN_URI() = takes(0) returns(0) {}
+#define macro APPROVE() = takes(0) returns(0) {}
+#define macro GET_APPROVED() = takes(0) returns(0) {}
+#define macro SET_APPROVAL_FOR_ALL() = takes(0) returns(0) {}
+#define macro IS_APPROVED_FOR_ALL() = takes(0) returns(0) {}
+#define macro TRANSFER_FROM() = takes(0) returns(0) {}
+#define macro SAFE_TRANSFER_FROM() = takes(0) returns(0) {}
+#define macro SUPPORTS_INTERFACE() = takes(0) returns(0) {}
+#define macro TOKEN_OF_OWNER_BY_INDEX() = takes(0) returns(0) {}
+#define macro TOKEN_BY_INDEX() = takes(0) returns(0) {}
+#define macro TOTAL_SUPPLY() = takes(0) returns(0) {}
