@@ -26,6 +26,10 @@
 #define function totalSupply() view returns(uint256)
 
 
+// Events
+#define event Transfer(address indexed, address indexed, uint256 indexed)
+
+
 // Primitives
 #define constant TOTAL_SUPPLY = FREE_STORAGE_POINTER()
 
@@ -40,6 +44,7 @@
 
 // Literals
 #define constant HORSE_HAPPY_IF_FED_WITHIN = 0x15180 // 1 day
+#define constant ZERO_ADDRESS = 0x0000000000000000000000000000000000000000
 
 
 // Function dispatch
@@ -104,22 +109,26 @@
 //======================
 
 #define macro MINT_HORSE() = takes(0) returns(0) {
-    caller // [caller] 
-    
+    [TOTAL_SUPPLY] sload // [total_supply]
+    caller // [caller, total_supply] 
+
     // Compute storage slot for total_supply within OWNERS and store the caller
-    [OWNERS] [TOTAL_SUPPLY] sload // [total_supply, map_slot, caller]
-    COMPUTE_MAPPING_KEY_SLOT(0x00) // [key_slot, caller]
-    sstore
+    [OWNERS] dup3 // [total_supply, map_slot, caller, total_supply]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) // [key_slot, caller, total_supply]
+    sstore // [total_supply]
 
     // Compute storage slot for caller within BALANCES and increment the balance by 1
-    [BALANCES] caller // [caller, map_slot]
-    COMPUTE_MAPPING_KEY_SLOT(0x00) dup1 // [key_slot, key_slot]
-    sload // [key_value, key_slot]
-    push1 0x01 add // [key_value + 1, key_slot]
-    swap1 sstore 
+    [BALANCES] caller // [caller, map_slot, total_supply]
+    COMPUTE_MAPPING_KEY_SLOT(0x00) dup1 // [key_slot, key_slot, total_supply]
+    sload // [key_value, key_slot, total_supply]
+    push1 0x01 add // [key_value + 1, key_slot, total_supply]
+    swap1 sstore // [total_supply]
+
+    // Log Transfer event
+    dup1 caller [ZERO_ADDRESS] __EVENT_HASH(Transfer) // [transfer_event_hash, zero_address, caller, total_supply, ...]
+    0x00 0x00 log4 // [total_supply]
 
     // Increment total_supply by 1
-    [TOTAL_SUPPLY] sload // [total_supply]
     push1 0x01 add // [total_supply + 1]
     [TOTAL_SUPPLY] sstore
 
